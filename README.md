@@ -94,6 +94,7 @@ curl -X POST http://127.0.0.1:8000/api/auth/users/ \
     "email": "john@example.com",
     "phone": "+1234567890",
     "password": "securepassword123",
+    "re_password": "securepassword123",
     "role": "user",
     "subscription_plan": "base"
   }'
