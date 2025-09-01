@@ -33,4 +33,7 @@ urlpatterns = [
     path('api/auth/jwt/create/', CustomTokenObtainPairView.as_view(), name='jwt-create'),
     # Keep refresh/verify from djoser/simplejwt
     path('api/auth/', include('djoser.urls.jwt')),
+    
+    # Subscriptions endpoints
+    path('', include('subscriptions.urls')),
 ]
