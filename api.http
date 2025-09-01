@@ -1,0 +1,112 @@
+### MedhaShaala API Test Requests
+
+# Base URL
+@baseUrl = http://127.0.0.1:8000
+
+### 1. Register a new user with email
+POST {{baseUrl}}/api/auth/users/
+Content-Type: application/json
+
+{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "securepassword123",
+    "re_password": "securepassword123",
+    "role": "user",
+    "subscription_plan": "base"
+}
+
+### 2. Register a new user with phone
+POST {{baseUrl}}/api/auth/users/
+Content-Type: application/json
+
+{
+    "name": "Jane Smith",
+    "phone": "+1234567890",
+    "password": "securepassword123",
+    "re_password": "securepassword123",
+    "role": "user",
+    "subscription_plan": "standard"
+}
+
+### 3. Register a new user with both email and phone
+POST {{baseUrl}}/api/auth/users/
+Content-Type: application/json
+
+{
+    "name": "Bob Wilson",
+    "email": "bob@example.com",
+    "phone": "+0987654321",
+    "password": "securepassword123",
+    "re_password": "securepassword123",
+    "role": "admin",
+    "subscription_plan": "premium"
+}
+
+### 4. Login with email
+POST {{baseUrl}}/api/auth/jwt/create/
+Content-Type: application/json
+
+{
+    "email": "john@example.com",
+    "password": "securepassword123"
+}
+
+### 5. Login with phone
+POST {{baseUrl}}/api/auth/jwt/create/
+Content-Type: application/json
+
+{
+    "phone": "+1234567890",
+    "password": "securepassword123"
+}
+
+### 6. Get user profile (requires authentication)
+GET {{baseUrl}}/api/auth/users/me/
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 7. Update user profile
+PATCH {{baseUrl}}/api/auth/users/me/
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "John Updated Doe",
+    "subscription_plan": "premium"
+}
+
+### 8. Refresh JWT token
+POST {{baseUrl}}/api/auth/jwt/refresh/
+Content-Type: application/json
+
+{
+    "refresh": "YOUR_REFRESH_TOKEN_HERE"
+}
+
+### 9. Verify JWT token
+POST {{baseUrl}}/api/auth/jwt/verify/
+Content-Type: application/json
+
+{
+    "token": "YOUR_ACCESS_TOKEN_HERE"
+}
+
+### 10. Request password reset
+POST {{baseUrl}}/api/auth/users/reset_password/
+Content-Type: application/json
+
+{
+    "email": "john@example.com"
+}
+
+### 11. Get API schema
+GET {{baseUrl}}/api/schema/
+
+### 12. Access Swagger documentation
+GET {{baseUrl}}/api/docs/
+
+### 13. Access ReDoc documentation
+GET {{baseUrl}}/api/redoc/
+
+### 14. Admin panel
+GET {{baseUrl}}/admin/
