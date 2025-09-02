@@ -59,7 +59,12 @@ class CustomTokenObtainPairView(APIView):
                 'phone': user.phone,
                 'name': user.name,
                 'role': user.role,
-                'subscription_plan': user.subscription_plan,
+                'subscription_plan': {
+                    'id': user.subscription_plan.id if user.subscription_plan else None,
+                    'name': user.subscription_plan_name,
+                    'features': user.subscription_plan_features,
+                } if user.subscription_plan else None,
+                'subscription_plan_name': user.subscription_plan_name,
                 'enabled_features': user.enabled_features,
             },
         }

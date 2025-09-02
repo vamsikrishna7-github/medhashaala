@@ -7,6 +7,20 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import CustomUser
 
 
+class SubscriptionPlanSerializer(serializers.ModelSerializer):
+    """Serializer for subscription plan details"""
+    
+    class Meta:
+        model = None  # Will be set dynamically
+        fields = ('id', 'name', 'features', 'price', 'is_active')
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Import here to avoid circular imports
+        from subscriptions.models import SubscriptionPlan
+        self.Meta.model = SubscriptionPlan
+
+
 class CustomUserCreateSerializer(UserCreateSerializer):
     """Custom serializer for user registration that accepts email OR phone"""
     
@@ -49,7 +63,7 @@ class CustomUserCreateSerializer(UserCreateSerializer):
             name=validated_data.get('name'),
             password=validated_data.get('password'),
             role=validated_data.get('role', 'user'),
-            subscription_plan=validated_data.get('subscription_plan', 'base'),
+            subscription_plan=validated_data.get('subscription_plan'),
         )
         return user
 
@@ -57,10 +71,29 @@ class CustomUserCreateSerializer(UserCreateSerializer):
 class CustomUserSerializer(UserSerializer):
     """Custom serializer for user profile"""
     
+    subscription_plan = SubscriptionPlanSerializer(read_only=True)
+    subscription_plan_name = serializers.CharField(read_only=True)
+    current_subscription = serializers.SerializerMethodField()
+    
     class Meta(UserSerializer.Meta):
         model = CustomUser
         fields = ('id', 'email', 'phone', 'name', 'role', 'subscription_plan', 
-                 'enabled_features', 'date_joined')
+                 'subscription_plan_name', 'current_subscription', 'enabled_features', 'date_joined')
+    
+    def get_current_subscription(self, obj):
+        """Get current active subscription details"""
+        subscription = obj.current_subscription
+        if subscription:
+            return {
+                'id': subscription.id,
+                'plan_name': subscription.plan.name,
+                'status': subscription.status,
+                'start_date': subscription.start_date,
+                'end_date': subscription.end_date,
+                'is_active': subscription.is_active,
+                'remaining_days': subscription.get_remaining_days(),
+            }
+        return None
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

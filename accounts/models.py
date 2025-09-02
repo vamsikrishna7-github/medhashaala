@@ -25,7 +25,6 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('role', 'super_admin')
-        extra_fields.setdefault('subscription_plan', 'premium')
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -41,22 +40,18 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         ('admin', 'Admin'),
         ('user', 'User'),
     ]
-    
-    SUBSCRIPTION_PLAN_CHOICES = [
-        ('base', 'Base'),
-        ('standard', 'Standard'),
-        ('premium', 'Premium'),
-    ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, null=True, blank=True)
     phone = models.CharField(max_length=15, unique=True, null=True, blank=True)
     name = models.CharField(max_length=255)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
-    subscription_plan = models.CharField(
-        max_length=20, 
-        choices=SUBSCRIPTION_PLAN_CHOICES, 
-        default='base'
+    subscription_plan = models.ForeignKey(
+        'subscriptions.SubscriptionPlan',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='users'
     )
     enabled_features = models.JSONField(default=dict, blank=True)
     
@@ -80,3 +75,25 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
+
+    @property
+    def current_subscription(self):
+        """Get the current active subscription for this user"""
+        try:
+            return self.subscriptions.filter(status='active').first()
+        except:
+            return None
+
+    @property
+    def subscription_plan_name(self):
+        """Get the subscription plan name as a string"""
+        if self.subscription_plan:
+            return self.subscription_plan.name
+        return 'No Plan'
+
+    @property
+    def subscription_plan_features(self):
+        """Get the features available in the current subscription plan"""
+        if self.subscription_plan:
+            return self.subscription_plan.features
+        return []

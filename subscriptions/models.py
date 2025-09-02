@@ -37,6 +37,18 @@ class SubscriptionPlan(models.Model):
     def feature_count(self):
         """Return the number of features in this plan"""
         return len(self.features) if self.features else 0
+    
+    def has_feature(self, feature_name):
+        """Check if this plan includes a specific feature"""
+        return feature_name in self.features if self.features else False
+    
+    def get_active_subscriptions(self):
+        """Get all active subscriptions for this plan"""
+        return self.user_subscriptions.filter(status='active')
+    
+    def get_active_users(self):
+        """Get all users with active subscriptions to this plan"""
+        return self.users.filter(subscriptions__status='active').distinct()
 
 
 class UserSubscription(models.Model):
@@ -83,3 +95,20 @@ class UserSubscription(models.Model):
         from django.utils import timezone
         remaining = self.end_date - timezone.now()
         return max(0, remaining.days)
+    
+    def cancel(self):
+        """Cancel this subscription"""
+        self.status = 'cancelled'
+        self.save(update_fields=['status', 'updated_at'])
+    
+    def expire(self):
+        """Mark this subscription as expired"""
+        self.status = 'expired'
+        self.save(update_fields=['status', 'updated_at'])
+    
+    def renew(self, end_date=None):
+        """Renew this subscription"""
+        self.status = 'active'
+        if end_date:
+            self.end_date = end_date
+        self.save(update_fields=['status', 'end_date', 'updated_at'])

@@ -304,3 +304,88 @@ class SubscriptionAPITest(TestCase):
         data = response.json()
         self.assertEqual(data['plan']['name'], 'Basic')
         self.assertEqual(data['status'], 'active')
+
+
+class SubscriptionPlanTestCase(TestCase):
+    def setUp(self):
+        """Set up test data"""
+        self.basic_plan = SubscriptionPlan.objects.create(
+            name='Basic',
+            features=['basic_access', 'limited_queries'],
+            price=Decimal('0.00'),
+            is_active=True
+        )
+        
+        self.premium_plan = SubscriptionPlan.objects.create(
+            name='Premium',
+            features=['basic_access', 'unlimited_queries', 'priority_support'],
+            price=Decimal('19.99'),
+            is_active=True
+        )
+        
+        self.user = User.objects.create_user(
+            email='test@example.com',
+            name='Test User',
+            password='testpass123'
+        )
+
+    def test_subscription_plan_creation(self):
+        """Test that subscription plans can be created"""
+        self.assertEqual(self.basic_plan.name, 'Basic')
+        self.assertEqual(self.basic_plan.price, Decimal('0.00'))
+        self.assertTrue(self.basic_plan.is_active)
+        self.assertEqual(self.basic_plan.feature_count, 2)
+
+    def test_user_subscription_plan_connection(self):
+        """Test that users can be connected to subscription plans"""
+        self.user.subscription_plan = self.premium_plan
+        self.user.save()
+        
+        # Refresh from database
+        self.user.refresh_from_db()
+        
+        self.assertEqual(self.user.subscription_plan, self.premium_plan)
+        self.assertEqual(self.user.subscription_plan_name, 'Premium')
+        self.assertEqual(self.user.subscription_plan_features, ['basic_access', 'unlimited_queries', 'priority_support'])
+
+    def test_user_subscription_creation(self):
+        """Test that user subscriptions can be created"""
+        subscription = UserSubscription.objects.create(
+            user=self.user,
+            plan=self.premium_plan,
+            status='active'
+        )
+        
+        self.assertEqual(subscription.user, self.user)
+        self.assertEqual(subscription.plan, self.premium_plan)
+        self.assertTrue(subscription.is_active)
+        self.assertIsNone(subscription.get_remaining_days())  # No end date set
+
+    def test_subscription_plan_features(self):
+        """Test subscription plan feature checking"""
+        self.assertTrue(self.premium_plan.has_feature('basic_access'))
+        self.assertTrue(self.premium_plan.has_feature('unlimited_queries'))
+        self.assertFalse(self.premium_plan.has_feature('nonexistent_feature'))
+
+    def test_user_without_subscription_plan(self):
+        """Test user without subscription plan"""
+        user_without_plan = User.objects.create_user(
+            email='no-plan@example.com',
+            name='No Plan User',
+            password='testpass123'
+        )
+        
+        self.assertIsNone(user_without_plan.subscription_plan)
+        self.assertEqual(user_without_plan.subscription_plan_name, 'No Plan')
+        self.assertEqual(user_without_plan.subscription_plan_features, [])
+
+    def test_subscription_plan_related_users(self):
+        """Test that subscription plans can access related users"""
+        self.user.subscription_plan = self.basic_plan
+        self.user.save()
+        
+        # Check that the plan can access its users
+        self.assertIn(self.user, self.basic_plan.users.all())
+        
+        # Check that the user can access their plan
+        self.assertEqual(self.user.subscription_plan, self.basic_plan)
